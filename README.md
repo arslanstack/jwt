@@ -21,7 +21,7 @@ Follow these steps to get started with the boilerplate:
 
 ### Laravel Backend
 
-1. Set up your Laravel environment and database configuration.
+1. Set up your Laravel environment and database configuration in `backend`.
 2. Run `composer install` to install the required dependencies.
 3. Set up your `.env` file with the necessary configurations, including your database connection and JWT secret.
 4. Run database migrations with `php artisan migrate` to create the required tables.
@@ -30,7 +30,7 @@ Follow these steps to get started with the boilerplate:
 
 ### React JS Frontend
 
-1. Navigate to the `react-frontend` directory.
+1. Navigate to the `frontend` directory.
 2. Run `npm install` to install the required Node.js modules.
 3. Update the API URL in the React application to point to your Laravel backend.
 4. Start the React development server: `npm start`.
