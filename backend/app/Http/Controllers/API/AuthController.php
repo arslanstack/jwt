@@ -28,7 +28,6 @@ class AuthController extends Controller
         $validator = Validator::make($data, [
             'email' => 'email|required|unique:users',
             'password' => 'required|min:6',
-            'confirm_password' => 'required|same:password',
             'name' => 'required',
         ]);
         if ($validator->fails()) {
@@ -41,8 +40,13 @@ class AuthController extends Controller
             'email_verified_at	' => now(),
         ]);
 
-        if($user) {
-            return response()->json(array('msg' => 'success', 'response' => 'User created successfully!'));
+        if ($user) {
+            $credentials = request(['email', 'password']);
+            if (!$token = auth()->attempt($credentials)) {
+                return response()->json(['msg' => 'error', 'response' => 'Invalid email or password!'], 401);
+            }
+
+            return $this->respondWithToken(JWTAuth::fromUser(auth()->user()));
         } else {
             return response()->json(array('msg' => 'error', 'response' => 'Something went wrong!'));
         }
@@ -60,11 +64,10 @@ class AuthController extends Controller
         }
         $credentials = request(['email', 'password']);
         if (!$token = auth()->attempt($credentials)) {
-            return response()->json(['msg'=> 'error', 'response' => 'Invalid email or password!'], 401);
+            return response()->json(['msg' => 'error', 'response' => 'Invalid email or password!'], 401);
         }
-        
+
         return $this->respondWithToken(JWTAuth::fromUser(auth()->user()));
-        
     }
 
     public function me()
@@ -75,7 +78,7 @@ class AuthController extends Controller
     public function logout()
     {
         auth()->logout();
-        return response()->json(['msg'=> 'success', 'response' => 'Successfully logged out']);
+        return response()->json(['msg' => 'success', 'response' => 'Successfully logged out']);
     }
 
     public function refresh()
@@ -86,6 +89,7 @@ class AuthController extends Controller
     {
         return response()->json([
             'access_token' => $token,
+            'user' => auth()->user(),
             'token_type' => 'bearer',
             'expires_in' => JWTAuth::factory()->getTTL() * 60,
         ]);
@@ -115,7 +119,7 @@ class AuthController extends Controller
         $subject = 'Reset Password';
         $body_html = '<h1>Forget Password Email</h1>';
         $body_html .= 'You can reset password from bellow link:';
-        $body_html .= '<a href='.url("account/reset-password", $data['token']).'>Reset Password</a>';
+        $body_html .= '<a href=' . url("account/reset-password", $data['token']) . '>Reset Password</a>';
         $body = $body_html;
         $headers = "MIME-Version: 1.0" . "\r\n";
         $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
@@ -126,10 +130,10 @@ class AuthController extends Controller
     public function resetPasswordForm($token)
     {
         $data = DB::table('password_resets')->where('token', $token)->first();
-        if(!$data){
+        if (!$data) {
             return response()->json(array('msg' => 'error', 'response' => 'Invalid token!'));
         }
-        return response()->json(array('msg' => 'success', 'email'=>$data->email, 'token' => $data->token));
+        return response()->json(array('msg' => 'success', 'email' => $data->email, 'token' => $data->token));
     }
 
     public function resetPassword(Request $request)
@@ -144,7 +148,7 @@ class AuthController extends Controller
             return response()->json(array('msg' => 'error', 'response' => $validator->errors(), 422));
         }
         $find_data = DB::table('password_resets')->where('token', $request->token)->first();
-        if(!$find_data){
+        if (!$find_data) {
             return response()->json(array('msg' => 'error', 'response' => 'Invalid token!'));
         }
 
@@ -152,11 +156,11 @@ class AuthController extends Controller
             'password' => bcrypt($data['new_password'])
         ]);
 
-        if($status > 0) {
+        if ($status > 0) {
             DB::table('password_resets')->where('email', $find_data->email)->delete();
-            return response()->json(array('msg' => 'success', 'response'=>'Your password has been changed!.'));
-        }else{
-            return response()->json(array('msg' => 'error', 'response'=>'Something went wrong!'));
+            return response()->json(array('msg' => 'success', 'response' => 'Your password has been changed!.'));
+        } else {
+            return response()->json(array('msg' => 'error', 'response' => 'Something went wrong!'));
         }
     }
 }
