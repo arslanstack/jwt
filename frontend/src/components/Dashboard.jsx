@@ -1,20 +1,21 @@
-import React, {useEffect} from 'react'
+// frontend\src\components\Dashboard.jsx
+
+import React, { useEffect } from 'react';
 import AuthUser from '../utils/AuthUser';
-import Login from './Login';
 
 const Dashboard = () => {
-  const user = AuthUser().getUser();
-  const me = AuthUser().me();
+    const { getUser, me, isAuthenticated } = AuthUser();
+    const user = getUser();
 
-  useEffect(() => {
-    me.then(res => {
-      console.log(res);
-    })
-  }
-  ,[])
-  return (
-    <div>Welcome {user.name} !</div>
-  )
+    return (
+        <div>
+            {isAuthenticated() ? (
+                <div>Welcome {user.name}!</div>
+            ) : (
+                <div>Access Denied. Please log in.</div>
+            )}
+        </div>
+    );
 }
 
-export default Dashboard
+export default Dashboard;

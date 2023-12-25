@@ -1,13 +1,18 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const AuthUser = () => {
-
     const navigate = useNavigate();
     const [token, setToken] = useState('');
     const [user, setUser] = useState('');
 
+    useEffect(() => {
+        const userToken = getToken();
+        if (userToken) {
+            setToken(userToken);
+        }
+    }, []);
 
     const getToken = () => {
         const tokenString = localStorage.getItem('token');
@@ -21,7 +26,6 @@ const AuthUser = () => {
         return user_detail;
     }
 
-
     const saveToken = (user, token) => {
         localStorage.setItem('token', JSON.stringify(token));
         localStorage.setItem('user', JSON.stringify(user));
@@ -31,11 +35,28 @@ const AuthUser = () => {
         navigate('/dashboard');
     }
 
+    const clearToken = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setToken('');
+        setUser('');
+    }
+
+    const isAuthenticated = () => {
+        const token = getToken();
+        if (token) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
 
     const http = axios.create({
         baseURL: 'http://127.0.0.1:8000/api',
         headers: {
-            'Content-type': 'application/json'
+            'Content-type': 'application/json',
+            Authorization: `Bearer ${token}`
         }
     });
 
@@ -44,54 +65,30 @@ const AuthUser = () => {
     }
 
     const login = (email, password) => {
-        return http.post('/login', { email, password });
+        return http.post('/login', { email, password })
+            .then(res => {
+                saveToken(res.data.user, res.data.access_token);
+            });
     }
 
-    const logout = () => {
-        return http.post('/logout', {}, {
-            headers: {
-                'Content-type': 'application/json',
-                Authorization: `Bearer ${token}`
-            }
-        }).then(res => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            setToken('');
-            setUser('');
+    const logout = async () => {
+        try {
+            await http.post('/logout');
+            clearToken();
             navigate('/');
-        }).catch(err => {
+        } catch (err) {
             console.log(err);
-        });
-    }
-
-    const me = () => {
-        return http.post('/me', {}, {
-            headers: {
-                'Content-type': 'application/json',
-                Authorization: `Bearer ${token}`
-            }
-        
-        }).then(res => {
-            return res.data;
-        }).catch(err => {
-            console.log(err);
-        });
-
-    }
-
-    const refreshToken = () => {
-        return http.post('/refresh');
+        }
     }
 
     return {
         register,
         login,
         logout,
-        me,
-        refreshToken,
         saveToken,
         getToken,
-        getUser
+        getUser,
+        isAuthenticated
     }
 }
 
